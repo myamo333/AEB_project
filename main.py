@@ -4,12 +4,7 @@ import numpy as np
 import time
 import math
 
-def process_image(image):
-    """Convert CARLA image to OpenCV format and display it."""
-    array = np.frombuffer(image.raw_data, dtype=np.uint8).reshape((image.height, image.width, 4))
-    array = cv2.cvtColor(array[:, :, :3], cv2.COLOR_BGR2RGB)
-    cv2.imshow("Camera View", array)
-    cv2.waitKey(1)
+from src.camera import setup_camera, release_video_writer
 
 def process_radar_data(data):
     """Extract relevant radar data and filter out ground detections."""
@@ -68,12 +63,7 @@ def main():
         print("Failed to spawn one or more vehicles.")
         return
     
-    camera_bp = blueprint_library.find('sensor.camera.rgb')
-    camera_bp.set_attribute('image_size_x', '640')
-    camera_bp.set_attribute('image_size_y', '480')
-    camera_bp.set_attribute('fov', '90')
-    camera = world.spawn_actor(camera_bp, carla.Transform(carla.Location(x=1.5, z=2.0)), attach_to=vehicles[0])
-    camera.listen(process_image)
+    camera = setup_camera(world, vehicles[0])
     
     radar_bp = blueprint_library.find('sensor.other.radar')
     radar_bp.set_attribute('horizontal_fov', '30')
@@ -85,12 +75,13 @@ def main():
     try:
         while True:
             apply_vehicle_control(vehicles[0], target_speed=50)
-            time.sleep(0.1)
+            time.sleep(0.05)
     except KeyboardInterrupt:
         print("Stopping...")
     finally:
         for actor in [camera, radar, *vehicles]:
             actor.destroy()
+        release_video_writer()  # VideoWriter を解放
         cv2.destroyAllWindows()
 
 if __name__ == "__main__":
