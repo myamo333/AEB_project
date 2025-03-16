@@ -1,17 +1,18 @@
 import carla
 import math
 
-# グローバル変数として radar_min_dist を定義
-radar_min_dist = float('inf')
+# グローバル変数として sel_radar_obj_dist を定義
+sel_radar_obj_dist = float('inf')
+sel_radar_obj_lat_pos = float('inf')
 
-def get_radar_min_dist():
+def get_radar_sel_obj():
     """現在の前方車両との距離を取得"""
-    global radar_min_dist
-    return radar_min_dist
+    global sel_radar_obj_dist, sel_radar_obj_lat_pos
+    return sel_radar_obj_dist, sel_radar_obj_lat_pos
 
 def radar_callback(data):
     """Radar センサーのコールバック関数"""
-    global radar_min_dist
+    global sel_radar_obj_dist, sel_radar_obj_lat_pos
     detected_objects = {
         i: {
             'distance': d.depth,
@@ -27,10 +28,10 @@ def radar_callback(data):
 
             distance_from_center = abs(x_3d)
 
-            if distance_from_center < 1.0 and z_3d < radar_min_dist:
-                radar_min_dist = z_3d
+            if distance_from_center < 1.0 and z_3d < sel_radar_obj_dist:
+                sel_radar_obj_dist = z_3d
+                sel_radar_obj_lat_pos = x_3d
 
-        # radar_min_dist = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
 
 def radar_to_cartesian(depth, azimuth, altitude):
     x = depth * math.cos(altitude) * math.sin(azimuth)

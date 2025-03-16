@@ -12,7 +12,8 @@ class CarlaYOLO:
         self.video_size = video_size
         self.fps = fps
         self.focal_length = focal_length  # 仮の焦点距離（カメラの特性に合わせて調整）
-        self.min_distance = float('inf')
+        self.sel_cam_obj_dist = float('inf')
+        self.sel_cam_obj_lat_pos = float('inf')
 
         # カメラ行列
         self.camera_matrix = np.array([[self.focal_length, 0, video_size[0] // 2],
@@ -100,11 +101,12 @@ class CarlaYOLO:
                 distance_from_center = abs(x_3d)
 
                 # 最も正面に近く、かつ最も z_3d が小さい（近い）オブジェクトを選択
-                if distance_from_center < 1.0 and z_3d < self.min_distance:  # 1.0 は許容範囲（調整可能）
-                    self.min_distance = z_3d
+                if distance_from_center < 1.0 and z_3d < self.sel_cam_obj_dist:  # 1.0 は許容範囲（調整可能）
+                    self.sel_cam_obj_dist = z_3d
+                    self.sel_cam_obj_lat_pos = x_3d
             
-    def get_camera_min_distance(self):
-        return self.min_distance
+    def get_camera_sel_obj(self):
+        return self.sel_cam_obj_dist, self.sel_cam_obj_lat_pos
                 
     def _estimate_distance(self, label, bbox_height):
         """Estimate the distance to the object using its height in the image."""

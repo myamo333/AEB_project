@@ -3,15 +3,19 @@ import cv2
 import numpy as np
 import time
 import math
+import csv
 
 from src.camera import setup_camera, CarlaYOLO
-from src.radar import setup_radar, get_radar_min_dist
+from src.radar import setup_radar, get_radar_sel_obj
 from src.vehicle_control import apply_vehicle_control
 
+csv_file_path = 'work/output_data.csv'
 def main():
-    radar_min_dist = float('inf')
-    camera_min_dist = float('inf')
-    fsn_min_dist = float('inf')
+    sel_radar_obj_dist = float('inf')
+    sel_radar_obj_lat_pos = float('inf')
+    sel_cam_obj_dist = float('inf')
+    sel_cam_obj_lat_pos = float('inf')
+    sel_fsn_obj_dist = float('inf')
     
     client = carla.Client('localhost', 2000)
     client.set_timeout(10.0)
@@ -37,19 +41,44 @@ def main():
     carla_yolo = CarlaYOLO()
     camera = setup_camera(world, vehicles[0], carla_yolo.process_image)
     radar = setup_radar(world, vehicles[0])
-    
+    cnt = 0
+    out_detected_obj = {}
     try:
         while True:
-            radar_min_dist = get_radar_min_dist()  # 距離を取得
-            camera_min_dist = carla_yolo.get_camera_min_distance()
+            sel_radar_obj_dist, sel_radar_obj_lat_pos = get_radar_sel_obj()  # 距離を取得
+            sel_cam_obj_dist, sel_cam_obj_lat_pos = carla_yolo.get_camera_sel_obj()
             #simple fsn method to confirm object confidnce
-            if (radar_min_dist + 5) > camera_min_dist > (radar_min_dist - 5):
-                fsn_min_dist = radar_min_dist
-            print(f'radar : {radar_min_dist}, camera : {camera_min_dist}')
-            apply_vehicle_control(vehicles[0], 50, fsn_min_dist)
+            if (sel_radar_obj_dist + 5) > sel_cam_obj_dist > (sel_radar_obj_dist - 5):
+                sel_fsn_obj_dist = sel_radar_obj_dist
+            print(f'radar : {sel_radar_obj_dist}, camera : {sel_cam_obj_dist}')
+            apply_vehicle_control(vehicles[0], 50, sel_fsn_obj_dist)
+            out_detected_obj[cnt] = {
+                'sel_radar_obj_dist' : sel_radar_obj_dist,
+                'sel_radar_obj_lat_pos' : sel_radar_obj_lat_pos,
+                'sel_cam_obj_dist' : sel_cam_obj_dist,
+                'sel_cam_obj_lat_pos' : sel_cam_obj_lat_pos,
+                'sel_fsn_obj_dist' : sel_fsn_obj_dist
+            }
+            cnt += 1
             time.sleep(0.05)
     except KeyboardInterrupt:
-        print("Stopping...")
+        print("Stopping...")# CSVファイルを開く（追記モード）
+        with open(csv_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            
+            # ヘッダーを書き込む
+            writer.writerow(['ID', 'sel_radar_obj_dist', 'sel_radar_obj_lat_pos', 'sel_cam_obj_dist', 'sel_cam_obj_lat_pos', 'sel_fsn_obj_dist'])
+            
+            # out_detected_obj の内容を書き込む
+            for obj_id, obj_data in out_detected_obj.items():
+                writer.writerow([
+                    obj_id,
+                    obj_data['sel_radar_obj_dist'],
+                    obj_data['sel_radar_obj_lat_pos'],
+                    obj_data['sel_cam_obj_dist'],
+                    obj_data['sel_cam_obj_lat_pos'],
+                    obj_data['sel_fsn_obj_dist']
+                ])
     finally:
         for actor in [camera, radar, *vehicles]:
             actor.destroy()
