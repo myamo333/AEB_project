@@ -4,13 +4,28 @@ import numpy as np
 from ultralytics import YOLO
 
 class CarlaYOLO:
-    def __init__(self, model_path='model/yolov8n.pt', output_video='work/output.mp4', video_size=(1600, 900), fps=30):
+    def __init__(self, model_path='model/yolov8n.pt', output_video='work/output.mp4', video_size=(1600, 900), fps=30, focal_length=800):
         # Load YOLOv8 model
         self.model = YOLO(model_path)
         self.video_writer = None
         self.output_video = output_video
         self.video_size = video_size
         self.fps = fps
+        self.focal_length = focal_length  # 仮の焦点距離（カメラの特性に合わせて調整）
+
+        # カメラ行列
+        self.camera_matrix = np.array([[self.focal_length, 0, video_size[0] // 2],
+                                       [0, self.focal_length, video_size[1] // 2],
+                                       [0, 0, 1]])
+
+        # 物体の実際の高さ（メートル単位）
+        self.object_heights = {
+            "car": 1.440,
+            "truck": 3.0,
+            "bus": 3.2,
+            "person": 1.7,
+            "bicycle": 1.1
+        }
 
     def initialize_video_writer(self):
         """Initialize the video writer."""
@@ -59,12 +74,39 @@ class CarlaYOLO:
                 # Convert box coordinates to integer
                 x1, y1, x2, y2 = int(x - w / 2), int(y - h / 2), int(x + w / 2), int(y + h / 2)
 
+                # 距離を計算
+                z = self._estimate_distance(label, h)
+
+                # 3D座標変換
+                x_3d, y_3d = self._get_3d_position(x, y, z)
+
                 # Draw bounding box
                 cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
                 # Put label and confidence score
-                cv2.putText(image, f'{label} {score:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(image, f'{label} {score:.2f} ({x_3d:.2f}, {y_3d:.2f}, {z:.2f}m)',
+                            (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                
+    def _estimate_distance(self, label, bbox_height):
+        """Estimate the distance to the object using its height in the image."""
+        if label in self.object_heights:
+            H = self.object_heights[label]  # 実際の高さ
+            h = bbox_height  # 画像内の高さ（ピクセル）
+            f = self.focal_length  # 焦点距離
+            if h > 0:  # 0除算防止
+                return (H * f) / h
+        return 10.0  # デフォルト値（推定失敗時）
 
+    def _get_3d_position(self, x_2d, y_2d, z):
+        """Convert 2D bounding box center to 3D position."""
+        fx = self.camera_matrix[0, 0]
+        fy = self.camera_matrix[1, 1]
+        cx = self.camera_matrix[0, 2]
+        cy = self.camera_matrix[1, 2]
+
+        x_3d = (x_2d - cx) * z / fx
+        y_3d = (y_2d - cy) * z / fy
+        return x_3d, y_3d
 
     def _display_and_save(self, image):
         """Display the image with bounding boxes and save to video."""
