@@ -9,7 +9,7 @@ def initialize_video_writer():
     """Initialize the video writer."""
     global video_writer
     if video_writer is None:
-        video_writer = cv2.VideoWriter('output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (1600, 900))
+        video_writer = cv2.VideoWriter('work/output.mp4', cv2.VideoWriter_fourcc(*'mp4v'), 30, (1600, 900))
 
 def process_image(image):
     """Convert CARLA image to OpenCV format, display it, and save to video."""

@@ -5,25 +5,7 @@ import time
 import math
 
 from src.camera import setup_camera, release_video_writer
-
-def process_radar_data(data):
-    """Extract relevant radar data and filter out ground detections."""
-    detected_objects = {
-        i: {
-            'distance': d.depth,
-            'azimuth': d.azimuth,
-            'velocity': d.velocity,
-            'altitude': d.altitude
-        }
-        for i, d in enumerate(data) if d.altitude > -0.1 * math.pi / 180
-    }
-    return detected_objects
-
-def radar_callback(data):
-    global front_vehicle_distance
-    detected_objects = process_radar_data(data)
-    if detected_objects:
-        front_vehicle_distance = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
+from src.radar import setup_radar, get_front_vehicle_distance
 
 def apply_vehicle_control(vehicle, target_speed):
     """Adjust vehicle throttle and brake based on target speed and distance to front vehicle."""
@@ -64,16 +46,11 @@ def main():
         return
     
     camera = setup_camera(world, vehicles[0])
-    
-    radar_bp = blueprint_library.find('sensor.other.radar')
-    radar_bp.set_attribute('horizontal_fov', '30')
-    radar_bp.set_attribute('range', '100')
-    radar_bp.set_attribute('points_per_second', '1500')
-    radar = world.spawn_actor(radar_bp, carla.Transform(carla.Location(x=2.5, z=0.5)), attach_to=vehicles[0])
-    radar.listen(radar_callback)
+    radar = setup_radar(world, vehicles[0])
     
     try:
         while True:
+            front_vehicle_distance = get_front_vehicle_distance()  # 距離を取得
             apply_vehicle_control(vehicles[0], target_speed=50)
             time.sleep(0.05)
     except KeyboardInterrupt:
