@@ -1,17 +1,17 @@
 import carla
 import math
 
-# グローバル変数として front_vehicle_distance を定義
-front_vehicle_distance = float('inf')
+# グローバル変数として radar_min_dist を定義
+radar_min_dist = float('inf')
 
-def get_front_vehicle_distance():
+def get_radar_min_dist():
     """現在の前方車両との距離を取得"""
-    global front_vehicle_distance
-    return front_vehicle_distance
+    global radar_min_dist
+    return radar_min_dist
 
 def radar_callback(data):
     """Radar センサーのコールバック関数"""
-    global front_vehicle_distance
+    global radar_min_dist
     detected_objects = {
         i: {
             'distance': d.depth,
@@ -22,7 +22,7 @@ def radar_callback(data):
         for i, d in enumerate(data) if d.altitude > -0.1 * math.pi / 180
     }
     if detected_objects:
-        front_vehicle_distance = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
+        radar_min_dist = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
 
 def setup_radar(world, vehicle):
     """Radar センサーをセットアップ"""

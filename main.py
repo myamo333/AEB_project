@@ -5,12 +5,13 @@ import time
 import math
 
 from src.camera import setup_camera, CarlaYOLO
-from src.radar import setup_radar, get_front_vehicle_distance
+from src.radar import setup_radar, get_radar_min_dist
 from src.vehicle_control import apply_vehicle_control
 
 def main():
-    global front_vehicle_distance
-    front_vehicle_distance = float('inf')
+    radar_min_dist = float('inf')
+    camera_min_dist = float('inf')
+    fsn_min_dist = float('inf')
     
     client = carla.Client('localhost', 2000)
     client.set_timeout(10.0)
@@ -39,8 +40,12 @@ def main():
     
     try:
         while True:
-            front_vehicle_distance = get_front_vehicle_distance()  # 距離を取得
-            apply_vehicle_control(vehicles[0], 50, front_vehicle_distance)
+            radar_min_dist = get_radar_min_dist()  # 距離を取得
+            camera_min_dist = carla_yolo.get_camera_min_distance()
+            if (radar_min_dist + 2) > camera_min_dist > (radar_min_dist - 2):
+                fsn_min_dist = radar_min_dist
+            print(f'radar : {radar_min_dist}, camera : {camera_min_dist}')
+            apply_vehicle_control(vehicles[0], 50, fsn_min_dist)
             time.sleep(0.05)
     except KeyboardInterrupt:
         print("Stopping...")

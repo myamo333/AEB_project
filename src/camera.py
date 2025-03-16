@@ -12,6 +12,7 @@ class CarlaYOLO:
         self.video_size = video_size
         self.fps = fps
         self.focal_length = focal_length  # 仮の焦点距離（カメラの特性に合わせて調整）
+        self.min_distance = float('inf')
 
         # カメラ行列
         self.camera_matrix = np.array([[self.focal_length, 0, video_size[0] // 2],
@@ -61,12 +62,11 @@ class CarlaYOLO:
 
         # クラスIDに対応するオブジェクトのリスト (車両、歩行者、自転車)
         target_classes = ['car', 'truck', 'bus', 'person', 'bicycle']
-
+        detected_objects={}
         for i, box in enumerate(boxes):
             x, y, w, h = box
             label_id = int(results[0].boxes.cls[i])  # Class ID
             label = labels[label_id]  # Get class name using the ID
-            
             # 車両、歩行者、自転車のいずれかであれば描画
             if label in target_classes:
                 score = scores[i]  # Confidence score
@@ -86,6 +86,26 @@ class CarlaYOLO:
                 # Put label and confidence score
                 cv2.putText(image, f'{label} {score:.2f} ({x_3d:.2f}, {y_3d:.2f}, {z:.2f}m)',
                             (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                detected_objects[i] = {
+                    'label' : label,
+                    'x_3d' : x_3d,
+                    'y_3d' : y_3d,
+                    'z_3d' : z
+                }
+        if detected_objects:
+            for tmp_id in detected_objects:
+                x_3d, z_3d = detected_objects[tmp_id]['x_3d'], detected_objects[tmp_id]['z_3d']
+                
+                # 正面に近いオブジェクトを探す（x_3d が 0 に近いほど正面）
+                distance_from_center = abs(x_3d)
+
+                # 最も正面に近く、かつ最も z_3d が小さい（近い）オブジェクトを選択
+                if distance_from_center < 1.0 and z_3d < self.min_distance:  # 1.0 は許容範囲（調整可能）
+                    self.min_distance = z_3d
+        print(self.min_distance)
+            
+    def get_camera_min_distance(self):
+        return self.min_distance
                 
     def _estimate_distance(self, label, bbox_height):
         """Estimate the distance to the object using its height in the image."""
