@@ -102,7 +102,6 @@ class CarlaYOLO:
                 # 最も正面に近く、かつ最も z_3d が小さい（近い）オブジェクトを選択
                 if distance_from_center < 1.0 and z_3d < self.min_distance:  # 1.0 は許容範囲（調整可能）
                     self.min_distance = z_3d
-        print(self.min_distance)
             
     def get_camera_min_distance(self):
         return self.min_distance

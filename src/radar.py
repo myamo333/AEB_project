@@ -22,7 +22,22 @@ def radar_callback(data):
         for i, d in enumerate(data) if d.altitude > -0.1 * math.pi / 180
     }
     if detected_objects:
-        radar_min_dist = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
+        for obj in detected_objects:
+            x_3d, y_3d, z_3d = radar_to_cartesian(detected_objects[obj]['distance'], detected_objects[obj]['azimuth'], detected_objects[obj]['altitude'])
+
+            distance_from_center = abs(x_3d)
+
+            if distance_from_center < 1.0 and z_3d < radar_min_dist:
+                radar_min_dist = z_3d
+
+        # radar_min_dist = min(detected_objects.values(), key=lambda x: abs(x['azimuth']))['distance']
+
+def radar_to_cartesian(depth, azimuth, altitude):
+    x = depth * math.cos(altitude) * math.sin(azimuth)
+    y = depth * math.sin(altitude)
+    z = depth * math.cos(altitude) * math.cos(azimuth)
+    
+    return x, y, z
 
 def setup_radar(world, vehicle):
     """Radar センサーをセットアップ"""

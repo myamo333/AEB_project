@@ -42,7 +42,8 @@ def main():
         while True:
             radar_min_dist = get_radar_min_dist()  # 距離を取得
             camera_min_dist = carla_yolo.get_camera_min_distance()
-            if (radar_min_dist + 2) > camera_min_dist > (radar_min_dist - 2):
+            #simple fsn method to confirm object confidnce
+            if (radar_min_dist + 5) > camera_min_dist > (radar_min_dist - 5):
                 fsn_min_dist = radar_min_dist
             print(f'radar : {radar_min_dist}, camera : {camera_min_dist}')
             apply_vehicle_control(vehicles[0], 50, fsn_min_dist)
