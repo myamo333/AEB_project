@@ -2,8 +2,8 @@ import carla
 import math
 
 # グローバル変数として sel_radar_obj_dist を定義
-sel_radar_obj_dist = float('inf')
-sel_radar_obj_lat_pos = float('inf')
+sel_radar_obj_dist = float(326)
+sel_radar_obj_lat_pos = float(326)
 
 def get_radar_sel_obj():
     """現在の前方車両との距離を取得"""
@@ -26,9 +26,7 @@ def radar_callback(data):
         for obj in detected_objects:
             x_3d, y_3d, z_3d = radar_to_cartesian(detected_objects[obj]['distance'], detected_objects[obj]['azimuth'], detected_objects[obj]['altitude'])
 
-            distance_from_center = abs(x_3d)
-
-            if distance_from_center < 1.0 and z_3d < sel_radar_obj_dist:
+            if z_3d < sel_radar_obj_dist:
                 sel_radar_obj_dist = z_3d
                 sel_radar_obj_lat_pos = x_3d
 

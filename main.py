@@ -11,11 +11,11 @@ from src.vehicle_control import apply_vehicle_control
 
 csv_file_path = 'work/output_data.csv'
 def main():
-    sel_radar_obj_dist = float('inf')
-    sel_radar_obj_lat_pos = float('inf')
-    sel_cam_obj_dist = float('inf')
-    sel_cam_obj_lat_pos = float('inf')
-    sel_fsn_obj_dist = float('inf')
+    sel_radar_obj_dist = float(326)
+    sel_radar_obj_lat_pos = float(326)
+    sel_cam_obj_dist = float(326)
+    sel_cam_obj_lat_pos = float(326)
+    sel_fsn_obj_dist = float(326)
     
     client = carla.Client('localhost', 2000)
     client.set_timeout(10.0)
@@ -46,7 +46,7 @@ def main():
     try:
         while True:
             sel_radar_obj_dist, sel_radar_obj_lat_pos = get_radar_sel_obj()  # 距離を取得
-            sel_cam_obj_dist, sel_cam_obj_lat_pos = carla_yolo.get_camera_sel_obj()
+            sel_cam_obj_dist, sel_cam_obj_lat_pos, sel_obj_type = carla_yolo.get_camera_sel_obj()
             #simple fsn method to confirm object confidnce
             if (sel_radar_obj_dist + 5) > sel_cam_obj_dist > (sel_radar_obj_dist - 5):
                 sel_fsn_obj_dist = sel_radar_obj_dist
@@ -57,6 +57,7 @@ def main():
                 'sel_radar_obj_lat_pos' : sel_radar_obj_lat_pos,
                 'sel_cam_obj_dist' : sel_cam_obj_dist,
                 'sel_cam_obj_lat_pos' : sel_cam_obj_lat_pos,
+                'sel_cam_obj_type' : sel_obj_type,
                 'sel_fsn_obj_dist' : sel_fsn_obj_dist
             }
             cnt += 1
@@ -77,6 +78,7 @@ def main():
                     obj_data['sel_radar_obj_lat_pos'],
                     obj_data['sel_cam_obj_dist'],
                     obj_data['sel_cam_obj_lat_pos'],
+                    obj_data['sel_cam_obj_type'],
                     obj_data['sel_fsn_obj_dist']
                 ])
     finally:
