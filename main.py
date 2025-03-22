@@ -8,6 +8,7 @@ import csv
 from src.camera import setup_camera, CarlaYOLO
 from src.radar import setup_radar, get_radar_sel_obj
 from src.vehicle_control import apply_vehicle_control
+from src.fsn import get_radar_info, get_camera_info, fsn
 
 csv_file_path = 'work/output_data.csv'
 def main():
@@ -52,6 +53,9 @@ def main():
                 sel_fsn_obj_dist = sel_radar_obj_dist
             print(f'radar : {sel_radar_obj_dist}, camera : {sel_cam_obj_dist}')
             apply_vehicle_control(vehicles[0], 50, sel_fsn_obj_dist)
+            get_radar_info(sel_radar_obj_dist, sel_radar_obj_lat_pos)
+            get_camera_info(sel_cam_obj_dist, sel_cam_obj_lat_pos, sel_obj_type)
+            fsn()
             out_detected_obj[cnt] = {
                 'sel_radar_obj_dist' : sel_radar_obj_dist,
                 'sel_radar_obj_lat_pos' : sel_radar_obj_lat_pos,
