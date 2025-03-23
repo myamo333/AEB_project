@@ -1,70 +1,45 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-from fsn import set_search_area
+from matplotlib.patches import Polygon as MplPolygon
+from fsn import set_search_area, generate_sector_polygon
 
-def calculate_sector(x, y):
-    """指定した座標を基に検知範囲を計算"""
-    result = set_search_area(x, y)
-    
-    d_min = result["d_min"]
-    d_max = result["d_max"]
-    theta_min = math.radians(result["theta_area"][0])
-    theta_max = math.radians(result["theta_area"][1])
-    
-    angles = np.linspace(theta_min, theta_max, 50)
-    
-    x_min_arc = d_min * np.cos(angles)
-    y_min_arc = d_min * np.sin(angles)
-    x_max_arc = d_max * np.cos(angles)
-    y_max_arc = d_max * np.sin(angles)
+def plot_polygons(radar_x, radar_y, camera_x, camera_y):
+    """レーダーとカメラのポリゴンを描画"""
+    radar_polygon, radar_points = generate_sector_polygon(radar_x, radar_y)
+    camera_polygon, camera_points = generate_sector_polygon(camera_x, camera_y)
 
-    return (d_min, d_max, theta_min, theta_max, x_min_arc, y_min_arc, x_max_arc, y_max_arc)
-
-def plot_sector(d_min, d_max, theta_min, theta_max, x_min_arc, y_min_arc, x_max_arc, y_max_arc, color, label_prefix):
-    """扇形の範囲を描画"""
-    plt.plot(x_min_arc, y_min_arc, f"{color}--", label=f"{label_prefix} Min Range")
-    plt.plot(x_max_arc, y_max_arc, f"{color}-", label=f"{label_prefix} Max Range")
-
-    # 境界線を描画
-    plt.plot([d_min * np.cos(theta_min), d_max * np.cos(theta_min)], 
-             [d_min * np.sin(theta_min), d_max * np.sin(theta_min)], f"{color}-")
-    plt.plot([d_min * np.cos(theta_max), d_max * np.cos(theta_max)], 
-             [d_min * np.sin(theta_max), d_max * np.sin(theta_max)], f"{color}-")
-
-def plot_radar_camera_sector(radar_x, radar_y, camera_x, camera_y, target_x, target_y):
-    """レーダーとカメラの検知範囲をプロット"""
-    # レーダーとカメラの検知範囲を計算
-    radar_sector = calculate_sector(radar_x, radar_y)
-    camera_sector = calculate_sector(target_x, target_y)
-
-    plt.figure(figsize=(8, 8))
+    fig, ax = plt.subplots(figsize=(8, 8))
 
     # レーダー描画
-    plt.plot(0, 1, 'ro', label="Radar")  # レーダー位置
-    plot_sector(*radar_sector, 'b', "Radar")
+    plt.plot(0, 1, 'ro')  # レーダー位置
 
     # カメラ描画
-    plt.plot(camera_x, camera_y, 'bo', label="Camera")  # カメラ位置
-    plot_sector(*camera_sector, 'm', "Camera")
+    plt.plot(0, 0, 'bo')  # カメラ位置
 
-    # 物標（ターゲット）
-    plt.plot(target_x, target_y, 'gx', markersize=10, label="Target")
+    # レーダーのポリゴン描画
+    radar_patch = MplPolygon(radar_points, closed=True, edgecolor='b', facecolor='b', alpha=0.3, label="Radar Area")
+    ax.add_patch(radar_patch)
 
-    # レーダーとカメラの方向線
-    plt.plot([0, radar_x], [0, radar_y], 'k-', label="Radar Direction")
-    plt.plot([camera_x, target_x], [camera_y, target_y], 'y-', label="Target Direction")
+    # カメラのポリゴン描画
+    camera_patch = MplPolygon(camera_points, closed=True, edgecolor='m', facecolor='m', alpha=0.3, label="Camera Area")
+    ax.add_patch(camera_patch)
 
-    # グラフ設定
-    plt.xlabel("X (横位置)")
-    plt.ylabel("Y (縦距離)")
-    plt.title("Radar and Camera Detection")
-    plt.legend()
-    plt.grid()
-    plt.axis("equal")
+    # レーダーとカメラの位置
+    ax.plot(radar_x, radar_y, 'ro', label="Radar_object")
+    ax.plot(camera_x, camera_y, 'bo', label="Camera_object")
+
+    # 設定
+    ax.set_xlabel("X (横位置)")
+    ax.set_ylabel("Y (縦距離)")
+    ax.set_title("Radar and Camera Detection Area")
+    ax.legend()
+    ax.grid()
+    ax.axis("equal")
 
     # 描画
     plt.show()
 
 # 例: レーダー、カメラ、物標の位置
-plot_radar_camera_sector(1, 10, 0, 0, 1, 7)
+plot_polygons(-0.03236273905, 8.556522068, 2.2, 12.5)
+	
